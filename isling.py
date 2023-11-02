@@ -45,12 +45,19 @@ class Isling:
         
         return mag_per_spin
 
+    def visualise(self):
+        plt.figure()
+        plt.imshow(self.lattice, cmap='gray', vmin=-1, vmax=1)
+        plt.show()
+
 
 
 L, B, J = 32, -0.05, 0.5
 isling = Isling(L,J,B)
 
 num_therm = 30
+
+isling.visualise()
 
 mag_per_spin_arr = np.zeros(num_therm)
 
@@ -64,6 +71,8 @@ plt.plot(mag_per_spin_arr)
 
 
 print(mag_per_spin_arr[-1])
-    
+
+
+isling.visualise()
 
     

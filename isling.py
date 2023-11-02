@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import ipywidgets as widgets
+from IPython.display import display
 
 
 class Isling:
@@ -11,6 +13,7 @@ class Isling:
         self.k = 1.381e-23  # m2 kg s-2 K-1
         self.beta = 1 #/ (self.k*self.T)
         self.lattice = 2*np.random.randint(2, size=(L,L)) - 1 #spins either -1 or 1
+        self.visualisations = []
         
     def total_energy(self):
         return np.dot(self.lattice, self.B)
@@ -34,6 +37,7 @@ class Isling:
         return prob > 1 or prob > rand_num
     
     def do_thermalisation_sweep(self):
+        
         for i in range(self.L):
             for j in range(self.L):
                 self.flip_spin(i,j)
@@ -44,26 +48,30 @@ class Isling:
         mag_per_spin = np.sum(self.lattice) / self.L**2
         
         return mag_per_spin
+    
+    def visualise(self, i):
+        fig, ax = plt.subplots()  # Create a new figure and axes
+        ax.imshow(self.lattice, cmap='gray', vmin=-1, vmax=1)
+        ax.set_title(f'Thermalisation Sweep: {i}')
+        self.visualisations.append(fig)  # Save the figure in the list
+        plt.close(fig)  # Close the figure to avoid displaying it here
+        
 
-    def visualise(self):
-        plt.figure()
-        plt.imshow(self.lattice, cmap='gray', vmin=-1, vmax=1)
-        plt.show()
 
 
-
-L, B, J = 32, -0.05, 0.5
+L, B, J = 100, -0.05, 0.5
 isling = Isling(L,J,B)
 
 num_therm = 30
 
-isling.visualise()
 
 mag_per_spin_arr = np.zeros(num_therm)
+visual_arr = []
 
 for i in range(num_therm):
     mag_per_spin = isling.do_thermalisation_sweep()
     mag_per_spin_arr[i] = mag_per_spin
+    isling.visualise(i+1)
 
 
 # plot magnetisation per spin array against numper of thermalisation sweeps
@@ -72,7 +80,13 @@ plt.plot(mag_per_spin_arr)
 
 print(mag_per_spin_arr[-1])
 
+# Create a slider to select the thermalisation sweep to display
+slider = widgets.IntSlider(min=0, max=num_therm-1, step=1, value=0)
 
-isling.visualise()
+# Display the slider and the corresponding thermalisation sweep
+def update_visualisation(i):
+    display(isling.visualisations[i])
+
+widgets.interactive(update_visualisation, i=slider)
 
     

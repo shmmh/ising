@@ -50,17 +50,16 @@ class Ising:
                 if not self.should_flip(i,j):
                     # flip back if false
                     self.flip_spin(i,j)
-        
-        mag_per_spin = np.sum(self.lattice) / self.L**2
-        
-        return mag_per_spin
+                    
+    def get_mag_per_spin(self):
+        return np.sum(self.lattice) / self.L**2
     
     def visualise(self, i):
         fig, ax = plt.subplots()  # Create a new figure and axes
         ax.imshow(self.lattice, vmin=-1, vmax=1)
         ax.set_title(f'Thermalisation Sweep: {i}')
-        self.visualisations.append(fig)  # Save the figure in the list
         plt.close(fig)  # Close the figure to avoid displaying it here
+        self.visualisations.append(fig)  # Save the figure in the list
         
 
     

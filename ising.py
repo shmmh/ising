@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ipywidgets as widgets
 from IPython.display import display
+from matplotlib import colors
 
 
 class Ising:
@@ -43,21 +44,30 @@ class Ising:
         prob = np.exp(-dE/self.beta)
         return prob > 1 or prob > rand_num
     
-    def do_thermalisation_sweep(self):
-        for i in range(self.L):
-            for j in range(self.L):
-                self.flip_spin(i,j)
-                if not self.should_flip(i,j):
-                    # flip back if false
+    def update_magnetic_field(self, b):
+        self.B = b
+    
+    def do_thermalisation_sweep(self, n = 1):
+        for k in range(n):
+            for i in range(self.L):
+                for j in range(self.L):
                     self.flip_spin(i,j)
+                    if not self.should_flip(i,j):
+                        # flip back if false
+                        self.flip_spin(i,j)
                     
     def get_mag_per_spin(self):
         return np.sum(self.lattice) / self.L**2
     
     def visualise(self, i):
         fig, ax = plt.subplots()  # Create a new figure and axes
-        ax.imshow(self.lattice, vmin=-1, vmax=1)
-        ax.set_title(f'Thermalisation Sweep: {i}')
+        cmap = colors.ListedColormap(['#482878','#DBE319'])
+        bounds = [-1, 0, 1]
+        norm = colors.BoundaryNorm(bounds, cmap.N)
+        ax.imshow(self.lattice, vmin=-1, vmax=1, cmap=cmap)
+        # ax.set_title(f'Thermalisation Sweep: {i}')
+        ax.axis('off')
+        fig.savefig(f'images/ising_{i}.png', dpi=300)
         plt.close(fig)  # Close the figure to avoid displaying it here
         self.visualisations.append(fig)  # Save the figure in the list
         

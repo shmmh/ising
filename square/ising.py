@@ -22,12 +22,17 @@ class Ising:
         self.beta = beta #/ (self.k*self.T)
         self.lattice = 2*np.random.randint(2, size=(L,L)) - 1 #spins either -1 or 1
         self.visualisations = []
-        
-    def total_energy(self):
-        return np.dot(self.lattice, self.B)
+        self.variance = 0
+    
     
     def interaction_energy(self):
-        return np.dot(self.lattice, self.lattice) * -self.J
+        return np.sum(self.lattice, self.lattice) * -self.J
+    
+    def magnetic_energy(self):
+        return np.sum(self.lattice, -self.B)
+    
+    def total_energy(self):
+        return self.interaction_energy() + self.magnetic_energy()
     
     def deltaE(self,i,j):
         f = (self.lattice[(i+1)%self.L,j] + self.lattice[(i-1)%self.L,j] + self.lattice[i,(j+1)%self.L] + self.lattice[i,(j-1)%self.L])
@@ -58,6 +63,20 @@ class Ising:
                     
     def get_mag_per_spin(self):
         return np.sum(self.lattice) / self.L**2
+    
+    def variance(self):
+        self.variance = np.var(self.lattice)
+    
+    def get_energy_per_spin(self):
+        return self.total_energy() / (2 * self.L**2)
+    
+    def get_succeptibility(self):
+        return self.beta * np.var(self.lattice) / self.L**2
+    
+    def get_specific_heat(self):
+        return 1/4 * self.beta**2 * np.var(self.lattice)  / self.L**2
+    
+    
     
     def visualise(self, i):
         fig, ax = plt.subplots()  # Create a new figure and axes

@@ -13,31 +13,37 @@ class KagomeIsing:
     beta: 1/kT Units of 1 and defaults to 1
     
     '''
-    def __init__(self, L,J1, J2,B, beta) -> None:
+    def __init__(self, L,J1, J2,T,B ) -> None:
         self.L = L  # Number of unit cells
         self.J1 = J1
         self.J2 = J2
+        self.T = T
         self.B = B
-        self.beta = beta #/ (self.k*self.T)
+        self.beta = 1/ self.T #/ (self.k*self.T)
         self.N = 3 * L**2
         # self.lattice = 2*np.random.randint(2, size=(self.N)) - 1 #spins either -1 or 1
         self.lattice = range(1, self.N+1)
-        self.visualisations = []
-        self.variance = 0
     
     def index(self, i,j,t):
-        return ((i%self.L) + (((j-1)%self.L)*self.L) + (t*(self.L**2))% self.N)
+        return ((i%self.L) + ((j%self.L)*self.L) + ((t-1)*(self.L**2)))
     
     def nn(self,i,j,t):
         # nn of sublattice A  is (i,j,2), (i,j-1,2), (i,j,3), (i-1,j,3)
         # nn of sublattice B is (i,j,3), (i-1,j+1,3), (i,j,1), (i,j+1,1)
         # nn of sublattice C is (i,j,1), (i+1,j,1), (i,j,2), (i+1,j-1,2)
-        if t == 1:
-            return [(i,j,2), (i,j-1,2), (i,j,3), (i-1,j,3)]
-        elif t == 2:
-            return [(i,j,3), (i-1,j+1,3), (i,j,1), (i,j+1,1)]
-        elif t == 3:
-            return [(i,j,1), (i+1,j,1), (i,j,2), (i+1,j-1,2)]
+        nns = [[(i,j,2), (i,j-1,2), (i,j,3), (i-1,j,3)],
+        [(i,j,3), (i-1,j+1,3), (i,j,1), (i,j+1,1)],
+        [(i,j,1), (i+1,j,1), (i,j,2), (i+1,j-1,2)]]
+        return nns[t-1]
+        
+    def nnn(self, i,j,t):
+        # nnn of sublattice A is (i-1,j,2), (i+1,j-1,2), (i-1,j+1,3), (i,j-1,3)
+        # nnn of sublattice B is (i-1,j+1,1), (i+1,j,1), (i-1,j,3), (i,j+1, 3)
+        # nnn of sublattice C is (i+1,j,2), (i,j-1,2), (i+1, j-1, 1), (i,j+1, 1)
+        nnns = [[(i-1,j,2), (i+1,j-1,2), (i-1,j+1,3), (i,j-1,3)],
+                [ (i-1,j+1,1), (i+1,j,1), (i-1,j,3), (i,j+1, 3)], 
+                [(i+1,j,2), (i,j-1,2), (i+1, j-1, 1), (i,j+1, 1)]]
+        return nnns[t-1]
     
     def interaction_energy(self):
         en = 0
@@ -45,8 +51,11 @@ class KagomeIsing:
             for j in range(self.L):
                 for t in range(1,4):
                         nearest_neighbours = self.nn(i,j,t)
-                        for n in nearest_neighbours:
-                            en += -1*self.J1 * self.lattice[self.index(*n)] * self.lattice[self.index(i,j,t)]
+                        next_nearest_neighbours = self.nnn(i,j,t)
+                        for nn in nearest_neighbours:
+                            en += -1*self.J1 * self.lattice[self.index(*nn)] * self.lattice[self.index(i,j,t)]
+                        for nnn in next_nearest_neighbours:
+                            en += -1*self.J2 * self.lattice[self.index(*nnn)] * self.lattice[self.index(i,j,t)]
         return en
     
     def magnetic_energy(self):
@@ -54,9 +63,7 @@ class KagomeIsing:
         for i in range(self.L):
             for j in range(self.L):
                 for t in range(1,4):
-                    nearest_neighbours = self.nn(i,j,t)
-                    for n in nearest_neighbours:
-                        men += -1*self.B * self.lattice[self.index(i,j,t)]
+                    men += -1*self.B * self.lattice[self.index(i,j,t)]
         return men
     
     def total_energy(self):
@@ -64,8 +71,10 @@ class KagomeIsing:
     
     def deltaE(self,i,j,t):
         nearest_neighbours = self.nn(i,j,t)
-        f = np.sum([self.lattice[self.index(*n)] for n in nearest_neighbours])
-        return -2 * (self.J1 * f + self.B) * self.lattice[self.index(i,j,t)]
+        next_nearest_neighbours = self.nnn(i,j,t)
+        f1 = np.sum([self.lattice[self.index(*nn)] for nn in nearest_neighbours])
+        f2 = np.sum([self.lattice[self.index(*nnn)] for nnn in next_nearest_neighbours])
+        return -2 * ((self.J1 * f1)+ (self.J2 * f2) + self.B) * self.lattice[self.index(i,j,t)]
     
     def flip_spin(self, i, j,t):
         self.lattice[self.index(i,j,t)] *= -1
@@ -73,7 +82,7 @@ class KagomeIsing:
     def should_flip(self, i,j,t) -> bool:
         dE = self.deltaE(i,j,t)
         rand_num = np.random.rand()
-        prob = np.exp(-dE/self.beta)
+        prob = np.exp(-dE * self.beta)
         return prob > 1 or prob > rand_num
     
     def update_magnetic_field(self, b):
